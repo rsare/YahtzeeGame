@@ -1,0 +1,16 @@
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ClientMain.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\model\PlayerState.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\model\ScoreCalculator.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\model\ScoreCategory.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ui\DicePanel.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ui\EndPanel.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ui\GameWindow.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ui\PlayPanel.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ui\ScoreBoardPanel.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\client\ui\StartPanel.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\network\Message.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\network\MessageType.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\network\NetworkClient.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\server\ClientHandler.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\server\GameSession.java
+C:\Projects\Yahtzee\YahtzeeGame\src\main\java\net\codejava\yahtzeegame\server\ServerMain.java

@@ -9,7 +9,7 @@ import java.io.IOException;
 public class ClientMain {
     public static void main(String[] args) {
         try {
-            String serverIp = "localhost"; //"13.60.44.150";
+            String serverIp = "13.60.44.150"; //"13.60.44.150";
             int port = 12345;
             NetworkClient client = new NetworkClient(serverIp, port);
 

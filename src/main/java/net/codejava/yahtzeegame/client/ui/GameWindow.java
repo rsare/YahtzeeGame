@@ -53,11 +53,12 @@ public class GameWindow extends JFrame {
                 replay.put("playerName", playerName);
                 client.sendMessage(replay);
 
-                resetToStart();
-                startPanel.showWaiting();
+                // Giriş ekranına dön
+                cardLayout.show(mainPanel, "START");
+                startPanel.reset();
+
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this,
-                        "Replay error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Replay error: " + ex.getMessage());
             }
         });
         endPanel.setExitAction(e -> exitGame());

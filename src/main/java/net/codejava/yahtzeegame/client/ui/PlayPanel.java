@@ -158,7 +158,7 @@ public class PlayPanel extends JPanel {
         btnRoll.setEnabled(isMyTurn && rollCount < 3);
 
         // Hold kutuları sadece 1 veya 2. roll'da aktif olsun
-        boolean enableHolds = isMyTurn && rollCount > 0 && rollCount < 3;
+        boolean enableHolds = isMyTurn && rollCount > 0 && rollCount < 4;
         for (JCheckBox box : holdBoxes) {
             box.setEnabled(enableHolds);
             if (!box.isEnabled()) box.setSelected(false);
@@ -207,17 +207,8 @@ public class PlayPanel extends JPanel {
             try {
                 Message msg = new Message("SURRENDER");
                 client.sendMessage(msg);
-
-                // Butonları kapat
-                btnSurrender.setEnabled(false);
-                btnRoll.setEnabled(false);
-                enableAllCategoryButtons(false);
-                for (JCheckBox box : holdBoxes) {
-                    box.setEnabled(false);
-                    box.setSelected(false);
-                }
-
-                lblTurnInfo.setText("You surrendered. Waiting for game to end...");
+                btnSurrender.setEnabled(false);  // Butonu devre dışı bırak
+                // Gerekirse diğer kontrolleri de kapat
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(
                         this,
@@ -228,6 +219,7 @@ public class PlayPanel extends JPanel {
             }
         }
     }
+
 
 
 

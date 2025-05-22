@@ -74,7 +74,10 @@ public class StartPanel extends JPanel {
         btnConnect.setEnabled(true);
         txtPlayerName.setEnabled(true);
         txtPlayerName.setText("");
+        txtPlayerName.requestFocusInWindow();  // İmleci aktif yap
     }
+
+
 
 
 }

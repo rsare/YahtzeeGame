@@ -46,18 +46,17 @@ public class GameWindow extends JFrame {
     private void setupEventHandlers() {
         startPanel.setConnectAction(e -> handleConnectAction());
 
-        endPanel.setReplayAction(e -> {
+        endPanel.setReplayAction(e -> {                                         // 🔧 ADD
             try {
-                // 1. Oyuncu adını tekrar gönder
-                Message joinMsg = new Message("JOIN_GAME");
-                joinMsg.put("playerName", playerName);
-                client.sendMessage(joinMsg);
+                Message replay = new Message("REPLAY_REQUEST");                 // yeni tip
+                replay.put("playerName", playerName);
+                client.sendMessage(replay);
 
-                // 2. Ana ekranda beklemeye alın (kendi showWaiting fonksiyonunu çağır)
-                startPanel.showWaiting();
+                startPanel.showWaiting();                                       // eskisi gibi bekle
                 cardLayout.show(mainPanel, "START");
             } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, "Replay error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this,
+                        "Replay error: " + ex.getMessage());
             }
         });
         endPanel.setExitAction(e -> exitGame());
@@ -126,7 +125,8 @@ public class GameWindow extends JFrame {
     private void exitGame() {
         try {
             client.close();
-        } catch (Exception ignored) {}
+        } catch (Exception ignored) {
+        }
         dispose();
     }
 }

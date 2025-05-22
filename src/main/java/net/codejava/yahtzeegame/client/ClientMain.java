@@ -4,11 +4,13 @@ import net.codejava.yahtzeegame.network.NetworkClient;
 import net.codejava.yahtzeegame.network.Message;
 import net.codejava.yahtzeegame.client.ui.GameWindow;
 
+import java.io.IOException;
+
 public class ClientMain {
     public static void main(String[] args) {
         try {
-            String serverIp = "localhost"; //"16.171.1.206"; //"16.171.1.206";
-            int port = 5000;
+            String serverIp = "localhost"; //"13.60.44.150";
+            int port = 12345;
             NetworkClient client = new NetworkClient(serverIp, port);
 
             GameWindow window = new GameWindow(client);
@@ -22,11 +24,12 @@ public class ClientMain {
                         System.out.println("ClientMain: Server'dan mesaj alındı: " + msg.type + " | " + msg.data);
                         window.handleServerMessage(msg);
                     }
-                } catch (Exception e) {
+                } catch (IOException | ClassNotFoundException e) {
                     e.printStackTrace();
-                    // Thread kapanıyor! Bunu burada bilerek yaz
+                    System.out.println("Connection closed or error occurred, stopping client receive thread.");
                 }
             }).start();
+
 
 
         } catch (Exception e) {

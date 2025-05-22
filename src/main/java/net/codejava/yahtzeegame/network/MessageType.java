@@ -8,5 +8,8 @@ public enum MessageType {
     SELECT,     // Category selection event
     UPDATE,     // General update (not used right now)
     END,        // Game over / concede
-    PING        // (optional keep-alive)
+    PING,     // (optional keep-alive)
+    REPLAY_REQUEST   // 🔧 ADD – Play-Again isteği
+
+
 }

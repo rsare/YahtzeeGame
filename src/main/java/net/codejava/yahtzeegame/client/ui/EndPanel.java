@@ -59,7 +59,9 @@ public class EndPanel extends JPanel {
         scoreArea.setText(sb.toString());
     }
 
-    public void setReplayAction(ActionListener listener) {
+    public void setReplayAction(ActionListener listener) {      // 🔧 ADD
+        for (ActionListener l : replayButton.getActionListeners())            // çift eklenmesin
+            replayButton.removeActionListener(l);
         replayButton.addActionListener(listener);
     }
 

@@ -11,7 +11,7 @@ import java.util.Queue;
 import static java.lang.System.out;
 
 public class ServerMain {
-    public static final int PORT = 5000;
+    public static final int PORT = 12345;
     public static final Queue<ClientHandler> waitingClients = new LinkedList<>();
 
 

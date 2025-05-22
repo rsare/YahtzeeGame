@@ -93,38 +93,38 @@ public class PlayPanel extends JPanel {
 
     public void updateTurn(Message msg) {
         String turnPlayer = (String) msg.get("currentPlayer");
+
         @SuppressWarnings("unchecked")
         List<Integer> diceList = (List<Integer>) msg.get("dice");
         int[] diceArray = diceList.stream().mapToInt(Integer::intValue).toArray();
+
         Map<ScoreCategory, Integer> p1Scores = (Map<ScoreCategory, Integer>) msg.get("p1Scores");
         Map<ScoreCategory, Integer> p2Scores = (Map<ScoreCategory, Integer>) msg.get("p2Scores");
-        boolean[] usedCats = (boolean[]) msg.get("usedCategories");
-        int currentRoll = msg.get("rollCount") instanceof Integer ? (Integer) msg.get("rollCount") : 0;
 
+        // usedCategories nesnesini al ve türüne göre boolean[]'e çevir
+        Object usedCatsObj = msg.get("usedCategories");
+        boolean[] usedCats;
 
-        // Eğer yeni tur başlıyorsa (rollCount 0 ise) zarları güncelle
-        if (currentRoll == 0) {
-            for (int i = 0; i < 5; i++) {
-                dice[i] = diceList.get(i);
-                dicePanels[i].setValue(dice[i]);
-                dicePanels[i].repaint();
+        if (usedCatsObj instanceof boolean[]) {
+            usedCats = (boolean[]) usedCatsObj;
+        } else if (usedCatsObj instanceof Boolean[]) {
+            Boolean[] boxed = (Boolean[]) usedCatsObj;
+            usedCats = new boolean[boxed.length];
+            for (int i = 0; i < boxed.length; i++) {
+                usedCats[i] = boxed[i] != null && boxed[i];
             }
+        } else {
+            // Eğer tip beklenmedikse, false dizisi oluştur (hepsi boş)
+            usedCats = new boolean[ScoreCategory.values().length];
         }
 
-        try {
-            // Zar değerlerini al ve güncelle
-            List<Integer> diceValues = (List<Integer>) msg.get("dice");
-            for (int i = 0; i < 5; i++) {
-                dice[i] = diceValues.get(i);
-                dicePanels[i].setValue(dice[i]);
-                dicePanels[i].repaint(); // Önemli: Yeniden çizim yap
-            }
+        int currentRoll = msg.get("rollCount") instanceof Integer ? (Integer) msg.get("rollCount") : 0;
 
-            // Debug çıktısı
-            System.out.println("Zar değerleri güncellendi: " + diceValues);
-
-        } catch (Exception e) {
-            System.err.println("Zar güncelleme hatası: " + e.getMessage());
+        // Zarları güncelle
+        System.arraycopy(diceArray, 0, dice, 0, dice.length);
+        for (int i = 0; i < dicePanels.length; i++) {
+            dicePanels[i].setValue(dice[i]);
+            dicePanels[i].repaint();
         }
 
         // Kategori butonlarını aktif/pasif et
@@ -135,13 +135,17 @@ public class PlayPanel extends JPanel {
             );
         }
 
-        // Roll ve hold kontrolü
-        btnRoll.setEnabled(turnPlayer.equals(playerName) && currentRoll < 3);
+        // Roll ve hold butonlarını kontrol et
+        boolean isMyTurn = turnPlayer.equals(playerName);
+        btnRoll.setEnabled(isMyTurn && currentRoll < 3);
+
         for (JCheckBox box : holdBoxes) {
-            box.setEnabled(turnPlayer.equals(playerName) && currentRoll > 0 && currentRoll < 3);
+            box.setEnabled(isMyTurn && currentRoll > 0 && currentRoll < 3);
             if (!box.isEnabled()) box.setSelected(false);
         }
-        if (turnPlayer.equals(playerName)) {
+
+        // Turn info güncelle
+        if (isMyTurn) {
             lblTurnInfo.setText("Your turn! (" + (currentRoll + 1) + "/3)");
         } else {
             lblTurnInfo.setText(opponentName + "'s turn...");
@@ -150,6 +154,8 @@ public class PlayPanel extends JPanel {
         // Skor tablosunu güncelle
         scoreBoardPanel.updateScores(p1Scores, p2Scores);
     }
+
+
 
     private void sendRollRequest() {
         try {

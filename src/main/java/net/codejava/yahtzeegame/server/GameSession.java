@@ -12,8 +12,6 @@ public class GameSession implements Runnable {
     private final String name1, name2;
 
     private volatile boolean surrendered = false;
-    private volatile String surrenderWinner = null;
-
 
     private static final int ROUNDS = 13;
     private Map<ScoreCategory, Integer> p1Scores = new EnumMap<>(ScoreCategory.class);
@@ -32,20 +30,8 @@ public class GameSession implements Runnable {
     @Override
     public void run() {
         try {
-            // Initialize game
             sendGameStartMessages();
-
-            // Main game loop
-            while (gameActive) {
-                playGame();
-
-                // Handle replay
-                if (handleReplay()) {
-                    resetGame();
-                    continue;
-                }
-                break;
-            }
+            playGame();
         } catch (Exception e) {
             handleGameError(e);
         } finally {
@@ -72,8 +58,9 @@ public class GameSession implements Runnable {
         int[] dice = new int[5];
         boolean p1Turn = true;
 
+        // 13 tur x 2 oyuncu
         for (int round = 0; round < ROUNDS * 2 && gameActive; round++) {
-            // Sırası olmayan oyuncu surrender yaptı mı?
+
             if (p1Turn && p2.hasSurrendered()) {
                 handleSurrender(false);
                 break;
@@ -86,21 +73,35 @@ public class GameSession implements Runnable {
             ClientHandler current = p1Turn ? p1 : p2;
             initializeTurn(dice, rnd);
 
-            sendTurnUpdates(p1Turn, dice, 0);
+            int rollCount = 0;  // Her oyuncunun kendi turunda roll sayısı
 
-            handlePlayerTurns(current, p1Turn, dice, rnd);
+            sendTurnUpdates(p1Turn, dice, rollCount);
 
-            // Sırası gelen oyuncu surrender yaptı mı?
-            if (p1Turn && p1.hasSurrendered()) {
-                handleSurrender(true);
-                break;
+            boolean turnFinished = false;
+
+            while (!turnFinished && gameActive) {
+                Message req = current.readMessage();
+
+                if ("SURRENDER".equals(req.type)) {
+                    handleSurrender(p1Turn);
+                    return;
+                } else if ("ROLL_REQUEST".equals(req.type)) {
+                    if (rollCount < 3) {
+                        rollCount = handleRollRequest(req, dice, rnd, rollCount);
+                        sendTurnUpdates(p1Turn, dice, rollCount);
+                    } else {
+                        // 3 roll hakkı doldu, roll isteği kabul edilmez, hata mesajı gönderilebilir
+                        current.sendMessage(new Message("ERROR", "No rolls left"));
+                    }
+                } else if ("CATEGORY_CHOICE".equals(req.type)) {
+                    handleCategoryChoice(req, dice,
+                            p1Turn ? p1Scores : p2Scores,
+                            p1Turn ? p1Used : p2Used);
+                    sendTurnUpdates(p1Turn, dice, rollCount);
+                    turnFinished = true;
+                }
             }
-            if (!p1Turn && p2.hasSurrendered()) {
-                handleSurrender(false);
-                break;
-            }
-
-            p1Turn = !p1Turn;
+            p1Turn = !p1Turn;  // Sırayı değiştir
         }
 
         if (gameActive) {
@@ -108,45 +109,11 @@ public class GameSession implements Runnable {
         }
     }
 
-
-
     private void initializeTurn(int[] dice, Random rnd) {
         for (int i = 0; i < 5; i++) {
             dice[i] = rnd.nextInt(6) + 1;
         }
     }
-
-    private void handlePlayerTurns(ClientHandler current, boolean p1Turn, int[] dice, Random rnd)
-            throws IOException, ClassNotFoundException {
-        int rollCount = 0;
-        Map<ScoreCategory, Integer> curScores = p1Turn ? p1Scores : p2Scores;
-        boolean[] curUsed = p1Turn ? p1Used : p2Used;
-
-        while (rollCount < 3 && gameActive) {
-            Message req = current.readMessage();
-
-            if ("SURRENDER".equals(req.type)) {
-                handleSurrender(p1Turn);
-                return;
-            } else if ("ROLL_REQUEST".equals(req.type)) {
-                rollCount = handleRollRequest(req, dice, rnd, rollCount);
-                sendTurnUpdates(p1Turn, dice, rollCount);
-            } else if ("CATEGORY_CHOICE".equals(req.type)) {
-                handleCategoryChoice(req, dice, curScores, curUsed);
-                sendTurnUpdates(p1Turn, dice, rollCount);
-                break;
-            }
-        }
-    }
-
-
-
-    private void handleSurrender(boolean p1Turn) throws IOException {
-        String winner = p1Turn ? name2 : name1;
-        sendGameOver(winner);
-        gameActive = false;
-    }
-
 
     private int handleRollRequest(Message req, int[] dice, Random rnd, int rollCount) {
         List<Boolean> holds = (List<Boolean>) req.get("holds");
@@ -159,7 +126,8 @@ public class GameSession implements Runnable {
     }
 
     private void handleCategoryChoice(Message req, int[] dice,
-                                      Map<ScoreCategory, Integer> curScores, boolean[] curUsed) {
+                                      Map<ScoreCategory, Integer> curScores,
+                                      boolean[] curUsed) {
         String catStr = (String) req.get("category");
         ScoreCategory cat = ScoreCategory.valueOf(catStr);
         int score = ScoreCalculator.calculate(cat, dice);
@@ -173,36 +141,23 @@ public class GameSession implements Runnable {
         sendTurnUpdate(p2, currentPlayer, dice, p1Scores, p2Scores, p1Turn ? p1Used : p2Used, rollCount);
     }
 
-    private boolean handleReplay() throws IOException, ClassNotFoundException {
-        // Her iki oyuncudan da REPLAY_REQUEST bekleyin
-        boolean p1Ready = false;
-        boolean p2Ready = false;
-
-        while (!p1Ready || !p2Ready) {
-            Message msg = p1.isActive() ? p1.readMessage() : p2.readMessage();
-
-            if ("REPLAY_REQUEST".equals(msg.type)) {
-                if (msg.get("playerName").equals(name1)) {
-                    p1Ready = true;
-                    System.out.println(name1 + " yeniden oynamak istiyor");
-                } else if (msg.get("playerName").equals(name2)) {
-                    p2Ready = true;
-                    System.out.println(name2 + " yeniden oynamak istiyor");
-                }
-            }
-        }
-
-        // Her iki oyuncu da hazır, yeni oyun başlat
-        System.out.println("Yeni oyun başlatılıyor...");
-        return true;
+    private void sendTurnUpdate(ClientHandler target, String turnPlayer, int[] dice,
+                                Map<ScoreCategory, Integer> p1Scores, Map<ScoreCategory, Integer> p2Scores,
+                                boolean[] usedCats, int rollCount) throws IOException {
+        Message update = new Message("TURN_UPDATE");
+        update.put("currentPlayer", turnPlayer);
+        update.put("dice", Arrays.asList(dice[0], dice[1], dice[2], dice[3], dice[4]));
+        update.put("p1Scores", new EnumMap<>(p1Scores));
+        update.put("p2Scores", new EnumMap<>(p2Scores));
+        update.put("usedCategories", usedCats);
+        update.put("rollCount", rollCount);
+        target.sendMessage(update);
     }
 
-    private void resetGame() {
-        p1Scores.clear();
-        p2Scores.clear();
-        Arrays.fill(p1Used, false);
-        Arrays.fill(p2Used, false);
-        gameActive = true;
+    private void handleSurrender(boolean p1Turn) throws IOException {
+        String winner = p1Turn ? name2 : name1;
+        sendGameOver(winner);
+        gameActive = false;
     }
 
     private void endGame() throws IOException {
@@ -214,25 +169,18 @@ public class GameSession implements Runnable {
 
     private int calculateTotalScore(Map<ScoreCategory, Integer> scores) {
         int total = scores.values().stream().mapToInt(Integer::intValue).sum();
-        // Add bonus if upper section >= 63
         int upperSum = Arrays.stream(ScoreCategory.values())
-                .limit(6) // First 6 categories are upper section
+                .limit(6) // Üst kategori
                 .mapToInt(cat -> scores.getOrDefault(cat, 0))
                 .sum();
-        if (upperSum >= 63) {
-            total += 35;
-        }
+        if (upperSum >= 63) total += 35; // Bonus
         return total;
     }
 
     private String determineWinner(int p1Total, int p2Total) {
-        if (p1Total > p2Total) {
-            return name1;
-        } else if (p2Total > p1Total) {
-            return name2;
-        } else {
-            return "Draw";
-        }
+        if (p1Total > p2Total) return name1;
+        else if (p2Total > p1Total) return name2;
+        else return "Draw";
     }
 
     private void sendGameOver(String winner) throws IOException {
@@ -248,19 +196,6 @@ public class GameSession implements Runnable {
 
         p1.sendMessage(end);
         p2.sendMessage(end);
-    }
-
-    private void sendTurnUpdate(ClientHandler target, String turnPlayer, int[] dice,
-                                Map<ScoreCategory, Integer> p1Scores, Map<ScoreCategory, Integer> p2Scores,
-                                boolean[] usedCats, int rollCount) throws IOException {
-        Message update = new Message("TURN_UPDATE");
-        update.put("currentPlayer", turnPlayer);
-        update.put("dice", Arrays.asList(dice[0], dice[1], dice[2], dice[3], dice[4]));
-        update.put("p1Scores", new EnumMap<>(p1Scores));
-        update.put("p2Scores", new EnumMap<>(p2Scores));
-        update.put("usedCategories", usedCats);
-        update.put("rollCount", rollCount);
-        target.sendMessage(update);
     }
 
     private void handleGameError(Exception e) {
@@ -279,15 +214,4 @@ public class GameSession implements Runnable {
         try { p1.close(); } catch (Exception ignored) {}
         try { p2.close(); } catch (Exception ignored) {}
     }
-
-    private void checkAnySurrender() throws IOException {
-        if (p1.hasSurrendered()) {
-            sendGameOver(name2);
-            gameActive = false;
-        } else if (p2.hasSurrendered()) {
-            sendGameOver(name1);
-            gameActive = false;
-        }
-    }
-
 }

@@ -32,6 +32,7 @@ public class ScoreCalculator {
         }
     }
 
+
     // ---- Yardımcı metotlar ----
     private static int countNumber(int[] dice, int num) {
         int count = 0;

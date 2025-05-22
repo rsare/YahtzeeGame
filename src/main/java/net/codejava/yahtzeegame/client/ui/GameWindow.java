@@ -85,14 +85,20 @@ public class GameWindow extends JFrame {
 
     public void handleServerMessage(Message msg) {
         SwingUtilities.invokeLater(() -> {
-            System.out.println("Sunucudan mesaj alındı: " + msg.type);
-
             switch (msg.type) {
                 case "GAME_START":
                     playerName = (String) msg.get("playerName");
                     String opponentName = (String) msg.get("opponentName");
                     startGame(msg);
+                    JOptionPane.showMessageDialog(this,
+                            "Game started against " + opponentName +
+                                    "\n\nYahtzee Rules:\n" +
+                                    "- You can roll up to 3 times per turn\n" +
+                                    "- Hold dice you want to keep between rolls\n" +
+                                    "- Choose a category after final roll\n" +
+                                    "- Each category can only be used once per game");
                     break;
+
                 case "TURN_UPDATE":
                     playPanel.updateTurn(msg);
                     break;

@@ -27,6 +27,8 @@ public class GameWindow extends JFrame {
 
         initializeUI();
         setupEventHandlers();
+        mainPanel.setBackground(new Color(154, 154, 220));  // Lavanta rengi gibi
+
     }
 
     private void initializeUI() {

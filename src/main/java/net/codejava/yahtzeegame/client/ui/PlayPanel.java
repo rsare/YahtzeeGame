@@ -31,6 +31,7 @@ public class PlayPanel extends JPanel {
         this.client = client;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        setBackground(new Color(223, 141, 141)); // Çok açık gri
         scoreBoardPanel = new ScoreBoardPanel(playerName, opponentName);
 
 

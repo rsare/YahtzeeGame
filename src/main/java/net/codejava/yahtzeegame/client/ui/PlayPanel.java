@@ -20,6 +20,7 @@ public class PlayPanel extends JPanel {
     private JPanel categoriesPanel = new JPanel(new GridLayout(0, 2, 5, 5));
     private ScoreBoardPanel scoreBoardPanel;
 
+
     private NetworkClient client;
     private String playerName, opponentName;
     private int[] dice = new int[5];
@@ -30,6 +31,8 @@ public class PlayPanel extends JPanel {
         this.client = client;
         setLayout(new BorderLayout(10, 10));
         setBorder(BorderFactory.createEmptyBorder(10, 20, 10, 20));
+        scoreBoardPanel = new ScoreBoardPanel(playerName, opponentName);
+
 
         // Zar ve Hold paneli
         JPanel zarVeHoldPanel = new JPanel();
@@ -46,6 +49,9 @@ public class PlayPanel extends JPanel {
         }
         zarVeHoldPanel.add(zarPanel);
         zarVeHoldPanel.add(holdPanel);
+        scoreBoardPanel.setPlayerNames(playerName, opponentName);
+        scoreBoardPanel = new ScoreBoardPanel(playerName, opponentName);
+
 
         add(zarVeHoldPanel, BorderLayout.NORTH);
 
@@ -61,7 +67,7 @@ public class PlayPanel extends JPanel {
         add(categoriesPanel, BorderLayout.EAST);
 
         // Skor tablosu
-        scoreBoardPanel = new ScoreBoardPanel("You", "Opponent");
+        scoreBoardPanel = new ScoreBoardPanel(playerName, opponentName);
         add(scoreBoardPanel, BorderLayout.WEST);
 
         // Kontrol butonları paneli
@@ -88,6 +94,7 @@ public class PlayPanel extends JPanel {
     public void initForNewGame(String playerName, String opponentName) {
         this.playerName = playerName;
         this.opponentName = opponentName;
+        //lblTurnInfo.setText("You: " + playerName + " | Opponent: " + opponentName);
         lblTurnInfo.setText("Game started! Your opponent: " + opponentName);
         setAllDiceAndHold(1, false);
         enableAllCategoryButtons(false);
@@ -97,6 +104,7 @@ public class PlayPanel extends JPanel {
     public void updateTurn(Message msg) {
         String turnPlayer = (String) msg.get("currentPlayer");
 
+
         @SuppressWarnings("unchecked")
         List<Integer> diceList = (List<Integer>) msg.get("dice");
         int[] diceArray = diceList.stream().mapToInt(Integer::intValue).toArray();
@@ -105,6 +113,13 @@ public class PlayPanel extends JPanel {
         Map<ScoreCategory, Integer> p1Scores = (Map<ScoreCategory, Integer>) msg.get("p1Scores");
         @SuppressWarnings("unchecked")
         Map<ScoreCategory, Integer> p2Scores = (Map<ScoreCategory, Integer>) msg.get("p2Scores");
+
+        if (playerName.equals(msg.get("playerName"))) {
+            scoreBoardPanel.updateScores(p1Scores, p2Scores);
+        } else {
+            // oyuncu2 isek, skorları ters geç
+            scoreBoardPanel.updateScores(p2Scores, p1Scores);
+        }
 
         Object usedCatsObj = msg.get("usedCategories");
         boolean[] usedCats;
@@ -192,7 +207,17 @@ public class PlayPanel extends JPanel {
             try {
                 Message msg = new Message("SURRENDER");
                 client.sendMessage(msg);
+
+                // Butonları kapat
                 btnSurrender.setEnabled(false);
+                btnRoll.setEnabled(false);
+                enableAllCategoryButtons(false);
+                for (JCheckBox box : holdBoxes) {
+                    box.setEnabled(false);
+                    box.setSelected(false);
+                }
+
+                lblTurnInfo.setText("You surrendered. Waiting for game to end...");
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(
                         this,
@@ -203,6 +228,8 @@ public class PlayPanel extends JPanel {
             }
         }
     }
+
+
 
     private void chooseCategory(ScoreCategory cat) {
         int score = ScoreCalculator.calculate(cat, dice);

@@ -14,6 +14,7 @@ public class GameWindow extends JFrame {
     private final CardLayout cardLayout = new CardLayout();
     private final JPanel mainPanel = new JPanel(cardLayout);
 
+
     private final StartPanel startPanel = new StartPanel();
     private final PlayPanel playPanel;
     private final EndPanel endPanel = new EndPanel();
@@ -46,14 +47,14 @@ public class GameWindow extends JFrame {
     private void setupEventHandlers() {
         startPanel.setConnectAction(e -> handleConnectAction());
 
-        endPanel.setReplayAction(e -> {                                         // 🔧 ADD
+        endPanel.setReplayAction(e -> {
             try {
-                Message replay = new Message("REPLAY_REQUEST");                 // yeni tip
+                Message replay = new Message("REPLAY_REQUEST");
                 replay.put("playerName", playerName);
                 client.sendMessage(replay);
 
-                startPanel.showWaiting();                                       // eskisi gibi bekle
-                cardLayout.show(mainPanel, "START");
+                resetToStart();
+                startPanel.showWaiting();
             } catch (IOException ex) {
                 JOptionPane.showMessageDialog(this,
                         "Replay error: " + ex.getMessage());
@@ -82,6 +83,11 @@ public class GameWindow extends JFrame {
             startPanel.reset();
         }
     }
+    public void resetToStart() {
+        startPanel.reset();
+        cardLayout.show(mainPanel, "START");
+    }
+
 
     public void handleServerMessage(Message msg) {
         SwingUtilities.invokeLater(() -> {
@@ -103,8 +109,8 @@ public class GameWindow extends JFrame {
                     playPanel.updateTurn(msg);
                     break;
                 case "GAME_OVER":
-                    playPanel.disableGameControls(); // Oyun bittiğinde tüm butonlar kapansın
-                    Map<String, Integer> results = (HashMap<String, Integer>) msg.get("results");
+                    playPanel.disableGameControls();
+                    Map<String, Integer> results = (Map<String, Integer>) msg.get("results");
                     String winner = (String) msg.get("winner");
                     endPanel.showResults(results, winner);
                     cardLayout.show(mainPanel, "END");
@@ -122,11 +128,13 @@ public class GameWindow extends JFrame {
     public void startGame(Message msg) {
         String myName = (String) msg.get("playerName");
         String opponentName = (String) msg.get("opponentName");
-        System.out.println("Oyun başladı: " + myName + " vs " + opponentName);
+
+        setTitle("Yahtzee Online - You: " + myName + " vs Opponent: " + opponentName);
 
         playPanel.initForNewGame(myName, opponentName);
         cardLayout.show(mainPanel, "PLAY");
     }
+
 
     private void exitGame() {
         try {

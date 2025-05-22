@@ -65,11 +65,11 @@ public class EndPanel extends JPanel {
     }
 
     public void setReplayAction(ActionListener listener) {
-        for (ActionListener l : replayButton.getActionListeners()) {
+        for (ActionListener l : replayButton.getActionListeners())
             replayButton.removeActionListener(l);
-        }
         replayButton.addActionListener(listener);
     }
+
 
     public void setExitAction(ActionListener listener) {
         for (ActionListener l : exitButton.getActionListeners()) {

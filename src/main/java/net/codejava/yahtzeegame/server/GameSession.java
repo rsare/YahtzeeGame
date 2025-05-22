@@ -31,13 +31,75 @@ public class GameSession implements Runnable {
     public void run() {
         try {
             sendGameStartMessages();
+
             playGame();
+
+            if (!gameActive) {
+                // Eğer oyun surrendered ile bitti ise replay bekleme
+                return;
+            }
+
+            // Oyun doğal bitti ise replay bekle
+            while (handleReplay()) {
+                resetGame();
+                playGame();
+            }
         } catch (Exception e) {
             handleGameError(e);
         } finally {
             cleanup();
         }
     }
+
+    private void resetGame() {
+        p1Scores.clear();
+        p2Scores.clear();
+        Arrays.fill(p1Used, false);
+        Arrays.fill(p2Used, false);
+        gameActive = true;
+    }
+
+
+    private boolean handleReplay() throws IOException, ClassNotFoundException {
+        boolean p1Ready = false;
+        boolean p2Ready = false;
+
+        while (!p1Ready || !p2Ready) {
+            if (!p1.isActive() || !p2.isActive()) {
+                System.out.println("Bir oyuncunun bağlantısı kapandı, replay iptal.");
+                return false;
+            }
+
+            if (!p1Ready && p1.isActive()) {
+                try {
+                    Message msg = p1.readMessage();
+                    if ("REPLAY_REQUEST".equals(msg.type) && name1.equals(msg.get("playerName"))) {
+                        p1Ready = true;
+                        System.out.println(name1 + " yeniden oynamak istiyor.");
+                    }
+                } catch (IOException | ClassNotFoundException e) {
+                    System.out.println(name1 + " bağlantı problemi, replay iptal.");
+                    return false;
+                }
+            }
+            if (!p2Ready && p2.isActive()) {
+                try {
+                    Message msg = p2.readMessage();
+                    if ("REPLAY_REQUEST".equals(msg.type) && name2.equals(msg.get("playerName"))) {
+                        p2Ready = true;
+                        System.out.println(name2 + " yeniden oynamak istiyor.");
+                    }
+                } catch (IOException | ClassNotFoundException e) {
+                    System.out.println(name2 + " bağlantı problemi, replay iptal.");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+
+
 
     private void sendGameStartMessages() throws IOException {
         Message msg1 = createGameStartMessage(name1, name2);
@@ -58,23 +120,21 @@ public class GameSession implements Runnable {
         int[] dice = new int[5];
         boolean p1Turn = true;
 
-        // 13 tur x 2 oyuncu
         for (int round = 0; round < ROUNDS * 2 && gameActive; round++) {
 
             if (p1Turn && p2.hasSurrendered()) {
                 handleSurrender(false);
-                break;
+                return;  // Oyun bitti, direkt çık
             }
             if (!p1Turn && p1.hasSurrendered()) {
                 handleSurrender(true);
-                break;
+                return;  // Oyun bitti, direkt çık
             }
 
             ClientHandler current = p1Turn ? p1 : p2;
             initializeTurn(dice, rnd);
 
-            int rollCount = 0;  // Her oyuncunun kendi turunda roll sayısı
-
+            int rollCount = 0;
             sendTurnUpdates(p1Turn, dice, rollCount);
 
             boolean turnFinished = false;
@@ -84,13 +144,12 @@ public class GameSession implements Runnable {
 
                 if ("SURRENDER".equals(req.type)) {
                     handleSurrender(p1Turn);
-                    return;
+                    return;  // Oyun bitti, direkt çık
                 } else if ("ROLL_REQUEST".equals(req.type)) {
                     if (rollCount < 3) {
                         rollCount = handleRollRequest(req, dice, rnd, rollCount);
                         sendTurnUpdates(p1Turn, dice, rollCount);
                     } else {
-                        // 3 roll hakkı doldu, roll isteği kabul edilmez, hata mesajı gönderilebilir
                         current.sendMessage(new Message("ERROR", "No rolls left"));
                     }
                 } else if ("CATEGORY_CHOICE".equals(req.type)) {
@@ -101,13 +160,14 @@ public class GameSession implements Runnable {
                     turnFinished = true;
                 }
             }
-            p1Turn = !p1Turn;  // Sırayı değiştir
+            p1Turn = !p1Turn;
         }
 
         if (gameActive) {
             endGame();
         }
     }
+
 
     private void initializeTurn(int[] dice, Random rnd) {
         for (int i = 0; i < 5; i++) {
@@ -155,7 +215,7 @@ public class GameSession implements Runnable {
     }
 
     private void handleSurrender(boolean p1Turn) throws IOException {
-        String winner = p1Turn ? name2 : name1;
+        String winner = p1Turn ? name2 : name1;  // Teslim edenin rakibi kazanır
         sendGameOver(winner);
         gameActive = false;
     }

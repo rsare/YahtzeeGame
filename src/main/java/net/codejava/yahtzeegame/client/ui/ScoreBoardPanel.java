@@ -10,6 +10,7 @@ import java.util.Map;
 public class ScoreBoardPanel extends JPanel {
     private JTable scoreTable;
     private DefaultTableModel tableModel;
+    private String name;
 
     // Kategori adlarını tek seferde çekiyoruz
     private static final String[] CATEGORY_NAMES = {
@@ -22,17 +23,15 @@ public class ScoreBoardPanel extends JPanel {
         setLayout(new BorderLayout(5,5));
         setBorder(BorderFactory.createTitledBorder("Score Board"));
 
-        // Tablo başlıkları
+        // Burada player1 ve player2, oyuncu isimleri olmalı!
         String[] columns = {"Category", player1, player2};
         tableModel = new DefaultTableModel(columns, 0) {
-            // Puan hücreleri editlenemesin
             @Override
             public boolean isCellEditable(int row, int column) {
                 return false;
             }
         };
 
-        // Başlangıçta tüm kategoriler ve boş skorlar
         for (String cat : CATEGORY_NAMES) {
             tableModel.addRow(new Object[]{cat, "-", "-"});
         }
@@ -42,6 +41,8 @@ public class ScoreBoardPanel extends JPanel {
 
         add(new JScrollPane(scoreTable), BorderLayout.CENTER);
     }
+
+
 
     /**
      * Skorları günceller. Map: kategori adı (enum) -> skor
@@ -53,6 +54,11 @@ public class ScoreBoardPanel extends JPanel {
             tableModel.setValueAt(p2Scores.getOrDefault(cat, 0), i, 2);
         }
     }
+    public void setPlayerNames(String player1, String player2) {
+        String[] newColumns = {"Category", player1, player2};
+        tableModel.setColumnIdentifiers(newColumns);
+    }
+
 
     /**
      * Oyun bitiminde toplam skorları gösterir (istenirse)

@@ -1,3 +1,4 @@
+
 package net.codejava.yahtzeegame.client.ui;
 
 import net.codejava.yahtzeegame.client.model.ScoreCategory;
@@ -12,7 +13,7 @@ public class ScoreBoardPanel extends JPanel {
     private DefaultTableModel tableModel;
     private String name;
 
-    // Kategori adlarını tek seferde çekiyoruz
+    // Kategori adlarını tek seferde çekiyorum
     private static final String[] CATEGORY_NAMES = {
             "Ones", "Twos", "Threes", "Fours", "Fives", "Sixes",
             "Three of a Kind", "Four of a Kind", "Full House",
@@ -23,7 +24,7 @@ public class ScoreBoardPanel extends JPanel {
         setLayout(new BorderLayout(5,5));
         setBorder(BorderFactory.createTitledBorder("Score Board"));
 
-        // Burada player1 ve player2, oyuncu isimleri olmalı!
+
         String[] columns = {"Category", player1, player2};
         tableModel = new DefaultTableModel(columns, 0) {
             @Override
@@ -44,9 +45,9 @@ public class ScoreBoardPanel extends JPanel {
 
 
 
-    /**
-     * Skorları günceller. Map: kategori adı (enum) -> skor
-     */
+
+    //Skorları günceller. Map: kategori adı (enum) -> skor
+
     public void updateScores(Map<ScoreCategory, Integer> p1Scores, Map<ScoreCategory, Integer> p2Scores) {
         for (int i = 0; i < CATEGORY_NAMES.length; i++) {
             ScoreCategory cat = ScoreCategory.values()[i];
@@ -60,9 +61,9 @@ public class ScoreBoardPanel extends JPanel {
     }
 
 
-    /**
-     * Oyun bitiminde toplam skorları gösterir (istenirse)
-     */
+
+     //Oyun bitiminde toplam skorları gösterir
+
     public void showTotals(int p1Total, int p2Total) {
         tableModel.addRow(new Object[]{"TOTAL", p1Total, p2Total});
     }

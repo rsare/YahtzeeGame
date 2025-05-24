@@ -5,13 +5,20 @@ import net.codejava.yahtzeegame.network.Message;
 import java.io.*;
 import java.net.Socket;
 
+/**
+ * ClientHandler – sunucu tarafında tek bir oyuncu soketini saran ve THREAD üzerinde çalışan sınıf
+ */
 public class ClientHandler implements Runnable {
+
+    //Soket ve akışlar
     private Socket socket;
-    private ObjectInputStream in;
+    private ObjectInputStream  in;
     private ObjectOutputStream out;
-    private String playerName; // Oyuncu adı veya id
-    private boolean active = true; // Bağlantı durumu
-    private volatile boolean surrendered = false;
+
+    // Oyuncu durumu
+    private String  playerName;               // Takma ad
+    private boolean active = true;            // Bağlantı HALA açık mı?
+    private volatile boolean surrendered = false;  // Teslim oldu mu?
 
 
     public void listenSurrenderAsync() {
@@ -25,18 +32,21 @@ public class ClientHandler implements Runnable {
                     }
                 }
             } catch (Exception ignored) {}
-        }).start();
+        }, "surrender-listener-" + playerName).start();
     }
-    public boolean hasSurrendered() {
-        return surrendered;
-    }
+
+
+    public boolean hasSurrendered() { return surrendered; }
+
 
     public ClientHandler(Socket socket) throws IOException {
         this.socket = socket;
-        // Out önce!
         this.out = new ObjectOutputStream(socket.getOutputStream());
         this.out.flush();
-        this.in = new ObjectInputStream(socket.getInputStream());
+        this.in  = new ObjectInputStream(socket.getInputStream());
+
+        socket.setSoTimeout(300);
+        // listenSurrenderAsync();
     }
 
     @Override
@@ -47,10 +57,11 @@ public class ClientHandler implements Runnable {
                 this.playerName = (String) firstMessage.get("playerName");
                 System.out.println("[DEBUG] Yeni oyuncu: " + playerName);
 
+                // Eşleştirme kuyruğuna ekle
                 synchronized (ServerMain.waitingClients) {
                     ServerMain.waitingClients.add(this);
-                    System.out.println("[DEBUG] Oyuncu bekleme listesine eklendi: " + playerName);
-                    ServerMain.tryPairClients();
+                    System.out.println("[DEBUG] Bekleme kuyruğuna eklendi: " + playerName);
+                    ServerMain.tryPairClients();  // Yeterince oyuncu varsa oyun başlat
                 }
             }
         } catch (Exception e) {
@@ -59,12 +70,13 @@ public class ClientHandler implements Runnable {
         }
     }
 
+
     public boolean isActive() {
         return socket != null && !socket.isClosed() && socket.isConnected();
     }
 
 
-
+    // Blocking şekilde bir Message okur SURRENDER ise flag set eder
     public Message readMessage() throws IOException, ClassNotFoundException {
         Message msg = (Message) in.readObject();
         if ("SURRENDER".equals(msg.type)) {
@@ -73,8 +85,7 @@ public class ClientHandler implements Runnable {
         return msg;
     }
 
-
-
+    // Thread-safe gerekmiyor oyun iş parçacığı tek seferde çağırıyor
     public void sendMessage(Message msg) throws IOException {
         out.writeObject(msg);
         out.flush();
@@ -82,23 +93,16 @@ public class ClientHandler implements Runnable {
 
     public void close() {
         active = false;
-        try { in.close(); } catch (Exception ignored) {}
-        try { out.close(); } catch (Exception ignored) {}
-        try { socket.close(); } catch (Exception ignored) {}
+        try { in.close();    } catch (Exception ignored) {}
+        try { out.close();   } catch (Exception ignored) {}
+        try { socket.close();} catch (Exception ignored) {}
     }
 
+    // Getter / Setter
+    public void setPlayerName(String name) { this.playerName = name; }
 
+    public String getPlayerName() { return playerName; }
 
-    public void setPlayerName(String name) {
-        this.playerName = name;
-    }
-
-    public String getPlayerName() {
-        return playerName;
-    }
-
-    public void markSurrendered() {
-        this.surrendered = true;
-    }
-
+    // Surrender'ı manuel işaretle
+    public void markSurrendered() { this.surrendered = true; }
 }

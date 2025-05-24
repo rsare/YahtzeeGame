@@ -1,3 +1,4 @@
+
 package net.codejava.yahtzeegame.client.model;
 
 public enum ScoreCategory {

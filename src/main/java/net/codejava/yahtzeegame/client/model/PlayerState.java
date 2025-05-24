@@ -14,7 +14,7 @@ public class PlayerState implements Serializable {
     // Her kategori için alınan puanlar (kategori adı -> puan)
     private Map<String, Integer> scores = new HashMap<>();
 
-    // Her kategoriye puan girildi mi?
+    // Her kategoriye puan girildi mi
     private Map<String, Boolean> usedCategories = new HashMap<>();
 
     // Toplam skor
